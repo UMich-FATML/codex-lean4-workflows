@@ -145,8 +145,8 @@ lean_code_actions(file, line)                   # Resolve "Try this" suggestions
 | Capability | Required | Check | Fallback |
 |-----------|----------|-------|----------|
 | Lean / Lake | yes | `lean --version`, `lake --version` | none — run `/lean4:doctor` |
-| Python 3 | yes (scripts) | `$LEAN4_PYTHON_BIN` set by bootstrap | none for script-dependent operations |
-| `$LEAN4_SCRIPTS` | yes (set by bootstrap) | `echo "$LEAN4_SCRIPTS"` | run `/lean4:doctor` |
+| Python 3 | yes (scripts) | `python3 --version` | none for script-dependent operations |
+| Skill-local scripts | yes | `ls -l scripts/sorry_analyzer.py` | run `/lean4:doctor` |
 | Lean LSP MCP | no | try `lean_goal` on any `.lean` file | scripts + `lake env lean` (file-level only) |
 | `lean_run_code` | no | try calling it | `lake env lean` on temp file |
 | `lean_code_actions` | no | try calling it | manual "Try this" application |
@@ -167,11 +167,12 @@ MCP works in the main thread. Run all proof work directly — do not delegate to
 
 ### scripts_only (no MCP, no subagents)
 
-Use `$LEAN4_SCRIPTS` for search and `lake env lean` / `lake build` for validation. **Key limitations in this mode:**
+Use the skill-local `scripts/` directory for search and `lake env lean` / `lake build` for
+validation. **Key limitations in this mode:**
 - **No live goal inspection** — `lean_goal` is unavailable; you can read the file and check compilation output, but cannot see proof state at a specific line
 - **No tactic testing** — `lean_multi_attempt` is unavailable; edits must be validated by compiling the file (`lake env lean`)
 - **No real-time diagnostics** — `lean_diagnostic_messages` is unavailable; use `lake env lean <file>` (from project root) for compilation errors, but feedback is file-level, not line-level
-- **Search is script-based** — `$LEAN4_SCRIPTS/smart_search.sh` replaces LSP search tools
+- **Search is script-based** — `scripts/smart_search.sh` replaces LSP search tools
 
 This mode is functional for straightforward proofs but significantly slower and less precise than MCP-backed workflows.
 
@@ -206,12 +207,13 @@ See [sorry-filling.md](references/sorry-filling.md) for the full scratch-work pr
 **Usage:** Invoked by commands automatically. See [references/](references/) for details.
 
 **Invocation contract:** Never run bare script names. Always use:
-- Python: `${LEAN4_PYTHON_BIN:-python3} "$LEAN4_SCRIPTS/script.py" ...`
-- Shell: `bash "$LEAN4_SCRIPTS/script.sh" ...`
+- Python: `${LEAN4_PYTHON_BIN:-python3} "scripts/script.py" ...`
+- Shell: `bash "scripts/script.sh" ...`
 - Report-only calls: add `--report-only` to `sorry_analyzer.py`, `check_axioms_inline.sh`, `unused_declarations.sh` — suppresses exit 1 on findings; real errors still exit 1. Do not use in gate commands like `/lean4:checkpoint`.
 - Keep stderr visible for Lean scripts (no `/dev/null` redirection), so real errors are not hidden.
 
-If `$LEAN4_SCRIPTS` is unset or missing, run `/lean4:doctor` and stay LSP-only until resolved.
+If the `scripts/` symlink is missing or broken, run `/lean4:doctor` and stay LSP-only until
+resolved.
 
 ## Automation
 
@@ -269,14 +271,17 @@ Note: `exact?`/`apply?` query mathlib (slow). `grind` and `aesop` are powerful b
 
 ## Troubleshooting
 
-If LSP tools aren't responding, check your operating profile above. In `scripts_only` mode, `$LEAN4_SCRIPTS` provides search and `lake env lean` provides file-level compilation feedback, but live goal inspection, tactic testing, and line-level diagnostics are unavailable. If environment variables (`LEAN4_SCRIPTS`, `LEAN4_REFS`) are missing, run `/lean4:doctor` to diagnose.
+If LSP tools aren't responding, check your operating profile above. In `scripts_only` mode,
+`scripts/` provides search and `lake env lean` provides file-level compilation feedback, but live
+goal inspection, tactic testing, and line-level diagnostics are unavailable. If the portable skill
+tree looks incomplete, run `/lean4:doctor` to diagnose.
 
 **Script environment check:**
 ```bash
-echo "$LEAN4_SCRIPTS"
-ls -l "$LEAN4_SCRIPTS/sorry_analyzer.py"
+pwd
+ls -l scripts scripts/sorry_analyzer.py
 # One-pass discovery for troubleshooting (human-readable default text):
-${LEAN4_PYTHON_BIN:-python3} "$LEAN4_SCRIPTS/sorry_analyzer.py" . --report-only
+${LEAN4_PYTHON_BIN:-python3} "scripts/sorry_analyzer.py" . --report-only
 # Structured output (optional): --format=json
 # Counts only (optional): --format=summary
 ```

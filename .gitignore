@@ -22,7 +22,9 @@ __pycache__/
 .claude
 
 # Codex
-.codex
+.codex/*
+!.codex/
+!.codex/config.toml
 
 # Scratch outputs (lean4:learn)
 .scratch/

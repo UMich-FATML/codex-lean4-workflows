@@ -30,12 +30,17 @@ run_test() {
 run_test_policy() {
   local desc="$1" policy="$2" cmd="$3" expected="$4" actual
   actual=0
-  local policy_env=()
+  local -a policy_env=()
   if [[ -n "$policy" ]]; then
     policy_env=(LEAN4_GUARDRAILS_COLLAB_POLICY="$policy")
   fi
-  echo "{\"tool_input\":{\"command\":$(printf '%s' "$cmd" | jq -Rs .)}}" \
-    | env LEAN4_GUARDRAILS_FORCE=1 "${policy_env[@]}" bash "$HOOK" >/dev/null 2>&1 || actual=$?
+  if [[ ${#policy_env[@]} -gt 0 ]]; then
+    echo "{\"tool_input\":{\"command\":$(printf '%s' "$cmd" | jq -Rs .)}}" \
+      | env LEAN4_GUARDRAILS_FORCE=1 "${policy_env[@]}" bash "$HOOK" >/dev/null 2>&1 || actual=$?
+  else
+    echo "{\"tool_input\":{\"command\":$(printf '%s' "$cmd" | jq -Rs .)}}" \
+      | env LEAN4_GUARDRAILS_FORCE=1 bash "$HOOK" >/dev/null 2>&1 || actual=$?
+  fi
   if [[ "$actual" -eq "$expected" ]]; then
     echo "  PASS: $desc"
     (( ++PASS ))

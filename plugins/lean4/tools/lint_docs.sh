@@ -452,12 +452,19 @@ check_bare_scripts() {
             [[ -z "$_bs_line" ]] && continue
             # Per-script check: for each known script, test if it appears bare on this line
             for _bs_script in $_bs_scripts; do
+                local _bs_sanitized
                 # Skip if this script isn't on this line
                 echo "$_bs_match" | grep -qF "$_bs_script" || continue
                 # Portable: strip prefixed occurrences, check if bare name remains
-                if echo "$_bs_match" | sed "s|LEAN4_SCRIPTS/$_bs_script||g" | grep -qF "$_bs_script"; then
+                _bs_sanitized="$_bs_match"
+                _bs_sanitized="${_bs_sanitized//LEAN4_SCRIPTS\/$_bs_script/}"
+                _bs_sanitized="${_bs_sanitized//\$\{LEAN4_SCRIPTS\}\/$_bs_script/}"
+                _bs_sanitized="${_bs_sanitized//scripts\/$_bs_script/}"
+                _bs_sanitized="${_bs_sanitized//skills\/lean4\/scripts\/$_bs_script/}"
+                _bs_sanitized="${_bs_sanitized//plugins\/lean4\/skills\/lean4\/scripts\/$_bs_script/}"
+                if echo "$_bs_sanitized" | grep -qF "$_bs_script"; then
                     if [[ "$_bs_severity" == "fail" ]]; then
-                        warn "$_bs_base:$_bs_line: Bare script '$_bs_script' (use \$LEAN4_SCRIPTS/ prefix)"
+                        warn "$_bs_base:$_bs_line: Bare script '$_bs_script' (use a scripts/ path)"
                     else
                         [[ -n "$VERBOSE" ]] && log "  note: $_bs_base:$_bs_line: Bare '$_bs_script' in reference"
                     fi
@@ -837,6 +844,21 @@ check_compat_alias() {
         [[ -n "$VERBOSE" ]] && ok "scripts -> lib/scripts symlink"
     fi
 
+    local _skill_link="$PLUGIN_ROOT/skills/lean4/scripts"
+    local _skill_target
+
+    if [[ ! -L "$_skill_link" ]]; then
+        warn "skills/lean4/scripts: Missing skill-local symlink (expected ../../lib/scripts)"
+        return
+    fi
+
+    _skill_target=$(readlink "$_skill_link")
+    if [[ "$_skill_target" != "../../lib/scripts" ]]; then
+        warn "skills/lean4/scripts: Symlink points to '$_skill_target' (expected ../../lib/scripts)"
+    else
+        [[ -n "$VERBOSE" ]] && ok "skills/lean4/scripts -> ../../lib/scripts symlink"
+    fi
+
     ok "Compat alias checked"
 }
 
@@ -863,10 +885,17 @@ check_path_patterns() {
         # Detect bare /scripts/*.py|.sh that aren't lib/scripts or $LEAN4_SCRIPTS
         while IFS=: read -r _pp_line _pp_match; do
             [[ -z "$_pp_line" ]] && continue
-            if echo "$_pp_match" | grep -qE '(lib/scripts|\$LEAN4_SCRIPTS|\$\{LEAN4_SCRIPTS)'; then
+            if echo "$_pp_match" | grep -qE '(lib/scripts|\$LEAN4_SCRIPTS|\$\{LEAN4_SCRIPTS|skills/lean4/scripts)'; then
                 continue
             fi
-            warn "$_pp_base:$_pp_line: Suspicious path pattern (use lib/scripts/ or \$LEAN4_SCRIPTS/)"
+            case "$file" in
+                */skills/lean4/*)
+                    if echo "$_pp_match" | grep -qE '(^|[[:space:]`"(])scripts/[A-Za-z0-9._-]+\.(py|sh)'; then
+                        continue
+                    fi
+                    ;;
+            esac
+            warn "$_pp_base:$_pp_line: Suspicious path pattern (use scripts/ in the skill tree or a plugin-root path)"
         done < <(grep -nE '/scripts/[a-zA-Z_]+\.(py|sh)' "$file" 2>/dev/null || true)
     done < <(find "$PLUGIN_ROOT" \( -name "*.md" -o -name "*.sh" \) -type f)
 

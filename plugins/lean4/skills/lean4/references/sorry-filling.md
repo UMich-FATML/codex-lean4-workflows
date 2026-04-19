@@ -33,7 +33,7 @@ Quick reference for filling Lean 4 sorries systematically.
 
 **Session-end reporting:** Report `files_touched` (files edited) and `scratch_files_created` (any `/tmp` files used for experiments). The caller uses this for staging and cleanup.
 
-Only fall back to scripts (`$LEAN4_SCRIPTS/sorry_analyzer.py`, `$LEAN4_SCRIPTS/smart_search.sh`) if:
+Only fall back to scripts (`scripts/sorry_analyzer.py`, `scripts/smart_search.sh`) if:
 - LSP server unavailable
 - LSP results inconclusive after 2-3 searches
 
@@ -73,12 +73,12 @@ Continue with the next sorry in the TODO list.
 
 **By name pattern:**
 ```bash
-bash $LEAN4_SCRIPTS/search_mathlib.sh "continuous compact" name
+bash scripts/search_mathlib.sh "continuous compact" name
 ```
 
 **Multi-source smart search:**
 ```bash
-bash $LEAN4_SCRIPTS/smart_search.sh "property description" --source=leansearch
+bash scripts/smart_search.sh "property description" --source=leansearch
 ```
 
 **Get tactic suggestions:**

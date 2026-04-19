@@ -220,7 +220,9 @@ Scripts provide sorry analysis, axiom checking, and search fallback when LSP is 
 
 ## Environment Variables
 
-Set by `bootstrap.sh` at session start:
+These are Claude Code adapter internals, set by `bootstrap.sh` at session start.
+Portable skill installs should use `skills/lean4/SKILL.md` plus the bundled
+`skills/lean4/scripts` symlink instead of relying on these variables.
 
 | Variable | Purpose |
 |----------|---------|
@@ -239,12 +241,11 @@ Optional user overrides (not set by bootstrap):
 
 **Script troubleshooting:**
 ```bash
-echo "$LEAN4_SCRIPTS"
-ls -l "$LEAN4_SCRIPTS/sorry_analyzer.py"
-${LEAN4_PYTHON_BIN:-python3} "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
+ls -l skills/lean4/scripts skills/lean4/scripts/sorry_analyzer.py
+${LEAN4_PYTHON_BIN:-python3} "skills/lean4/scripts/sorry_analyzer.py" . --format=summary --report-only
 ```
 
-If `$LEAN4_SCRIPTS` is unset, run `/lean4:doctor` to reinitialize.
+If the Claude bootstrap variables are unset, run `/lean4:doctor` to reinitialize.
 
 ## File Structure
 
@@ -254,7 +255,8 @@ plugins/lean4/
 ├── commands/           # User-invocable commands
 ├── skills/lean4/
 │   ├── SKILL.md        # Core skill reference
-│   └── references/     # Reference docs
+│   ├── references/     # Reference docs
+│   └── scripts/        # Agent-skill entrypoint → ../../lib/scripts
 ├── agents/             # 4 specialized agents
 ├── hooks/              # Bootstrap and guardrails
 ├── scripts/            # Compat alias → lib/scripts

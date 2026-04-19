@@ -32,9 +32,9 @@ This guide helps you upgrade from the legacy 3-plugin system (v3.x) to the unifi
 
 | V3 | V4 |
 |----|-----|
-| `.claude/tools/lean4/` | `$LEAN4_SCRIPTS/` |
-| `.claude/docs/lean4/` | `$LEAN4_REFS/` |
-| (copied into workspace) | (stays in plugin directory) |
+| `.claude/tools/lean4/` | `skills/lean4/scripts/` |
+| `.claude/docs/lean4/` | `skills/lean4/references/` |
+| (copied into workspace) | (stays in the plugin / skill directory) |
 
 ## Upgrade Steps
 
@@ -145,7 +145,7 @@ If you need the old 3-plugin version:
 
 ## Troubleshooting
 
-### "LEAN4_SCRIPTS not set"
+### Claude bootstrap variables missing
 
 The bootstrap hook didn't run. Try:
 1. Restart Claude Code session
@@ -160,12 +160,14 @@ Make sure you installed from the v4 version:
 
 ### Scripts not working
 
-The scripts now live in the plugin directory. Use `$LEAN4_SCRIPTS/` prefix:
+The portable scripts now live under the skill directory:
 ```bash
-${LEAN4_PYTHON_BIN:-python3} "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
+${LEAN4_PYTHON_BIN:-python3} "skills/lean4/scripts/sorry_analyzer.py" . --format=summary --report-only
 ```
 
-Both `lib/scripts/` and `scripts/` (compat alias) resolve to the same directory. If your environment doesn't preserve symlinks (e.g., archive extraction), use `$LEAN4_SCRIPTS` as the canonical path.
+Both `skills/lean4/scripts/` and the plugin-root `scripts/` compat alias resolve to the same
+directory. If your environment does not preserve symlinks (for example after archive extraction),
+recreate the `skills/lean4/scripts -> ../../lib/scripts` symlink before using the portable skill.
 
 ### Need help?
 

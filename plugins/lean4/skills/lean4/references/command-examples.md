@@ -123,7 +123,7 @@ theorem padic_complete (p : ℕ) [hp : Fact (Nat.Prime p)] :
   sorry -- ⚠ proof blocked: needs Mathlib.NumberTheory.Padics.PadicIntegers
 ```
 
-bash "$LEAN4_SCRIPTS/check_axioms_inline.sh" <target>.lean --report-only → ✓ standard axioms only
+bash "scripts/check_axioms_inline.sh" <target>.lean --report-only → ✓ standard axioms only
 
 Note: Mathlib likely has this as an instance. Searching...
 lean_leanfinder("CompleteSpace Padic") → `Padic.instCompleteSpace`
@@ -1224,8 +1224,8 @@ Claude: Running diagnostics...
 ✓ Lean LSP MCP tools available in this session (lean_goal)
 
 ### Plugin
-✓ LEAN4_PLUGIN_ROOT=/home/user/.claude/plugins/lean4
-✓ LEAN4_SCRIPTS=/home/user/.claude/plugins/lean4/lib/scripts
+✓ skill root available
+✓ scripts/sorry_analyzer.py available
 ✓ Hooks executable
 ✓ Scripts executable (12 files)
 

@@ -1,15 +1,20 @@
 # Installation Guide
 
-## Environment Bootstrap (All Hosts)
+## Portable Skill Layout
 
-All hosts need these three variables. Claude Code sets them automatically via its
-bootstrap hook. Other hosts set them manually in shell profile or agent config.
+The portable entrypoint is the skill directory itself:
 
-```bash
-export LEAN4_PLUGIN_ROOT=/path/to/lean4-skills/plugins/lean4
-export LEAN4_SCRIPTS=$LEAN4_PLUGIN_ROOT/lib/scripts
-export LEAN4_REFS=$LEAN4_PLUGIN_ROOT/skills/lean4/references
+```text
+plugins/lean4/skills/lean4/
+├── SKILL.md
+├── references/
+└── scripts -> ../../lib/scripts
 ```
+
+Non-Claude hosts should point the agent at `SKILL.md` and preserve that bundled
+`scripts/` + `references/` layout. Claude Code still exports adapter-specific
+environment variables internally, but the portable skill contract no longer
+depends on them.
 
 ## Claude Code (Native Plugin)
 
@@ -57,59 +62,58 @@ No special setup required.
 3. Restart Claude Code
 4. Test: try `lean_goal` on a `.lean` file
 
-#### Environment Variables Not Set
+#### Bootstrap Variables Missing
 
-The `LEAN4_SCRIPTS` etc. variables are set by the bootstrap hook. If missing:
+Claude Code sets its internal Lean 4 adapter variables from the bootstrap hook.
+If `/lean4:doctor` reports them missing:
 1. Restart Claude Code session
 2. Check `/lean4:doctor env`
 
 #### Scripts Not Executable
 
 ```bash
-chmod +x $LEAN4_SCRIPTS/*.sh $LEAN4_SCRIPTS/*.py
+chmod +x ~/.claude/plugins/lean4/lib/scripts/*.sh ~/.claude/plugins/lean4/lib/scripts/*.py
 ```
 
 ## OpenAI Codex CLI
 
-Set env vars in your shell profile (replace `/path/to` with your actual clone location):
+Create a repo-local discovery symlink so parent sessions and spawned subagents
+see the same skill tree:
 
 ```bash
-export LEAN4_PLUGIN_ROOT=/path/to/lean4-skills/plugins/lean4
-export LEAN4_SCRIPTS=$LEAN4_PLUGIN_ROOT/lib/scripts
-export LEAN4_REFS=$LEAN4_PLUGIN_ROOT/skills/lean4/references
+mkdir -p .agents/skills
+ln -s /path/to/lean4-skills/plugins/lean4/skills/lean4 .agents/skills/lean4
 ```
 
-Add to your project's `AGENTS.md` (model context — not shell env):
+Optionally add workspace-local Codex config:
+
+```toml
+[[skills.config]]
+path = "/path/to/lean4-skills/plugins/lean4/skills/lean4/SKILL.md"
+enabled = true
+```
+
+Add to your project's `AGENTS.md` (model context):
 
 ```markdown
 ## Lean 4 Workflows
 
 See /path/to/lean4-skills/plugins/lean4/skills/lean4/SKILL.md for proving workflows.
-
-Environment:
-- LEAN4_PLUGIN_ROOT=/path/to/lean4-skills/plugins/lean4
-- LEAN4_SCRIPTS=$LEAN4_PLUGIN_ROOT/lib/scripts
-- LEAN4_REFS=$LEAN4_PLUGIN_ROOT/skills/lean4/references
 ```
 
-Codex also supports installing skills as directories and adding MCP servers.
-Check [current Codex docs](https://developers.openai.com/codex/skills/) for
-the exact commands — examples:
+Codex MCP setup remains separate:
 
 ```bash
-# Skill install (check current syntax)
-# codex skill add /path/to/lean4-skills/plugins/lean4/skills/lean4
-
-# MCP setup (check current syntax)
-# codex mcp add lean-lsp -- npx lean-lsp-mcp --project /path/to/lean/project
+codex mcp add lean-lsp -- npx lean-lsp-mcp --project /path/to/lean/project
 ```
 
 ### Verify
 
 ```bash
-echo "$LEAN4_SCRIPTS"
-python3 "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
-# If MCP configured: test lean_goal on a .lean file
+readlink .agents/skills/lean4
+python3 .agents/skills/lean4/scripts/sorry_analyzer.py . --format=summary --report-only
+codex debug prompt-input "Use the lean4 skill if available." >/tmp/lean4-prompt.json
+# If MCP configured: test `lean_goal` in a fresh Codex session
 ```
 
 ## Gemini CLI
@@ -131,19 +135,10 @@ or instruct Gemini to read the file:
 Read ./lean4-skills/plugins/lean4/skills/lean4/SKILL.md for proving workflows.
 ```
 
-Set env vars in your shell profile:
-
-```bash
-export LEAN4_PLUGIN_ROOT=/path/to/lean4-skills/plugins/lean4
-export LEAN4_SCRIPTS=$LEAN4_PLUGIN_ROOT/lib/scripts
-export LEAN4_REFS=$LEAN4_PLUGIN_ROOT/skills/lean4/references
-```
-
 ### Verify
 
 ```bash
-echo "$LEAN4_SCRIPTS"
-python3 "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
+python3 /path/to/lean4-skills/plugins/lean4/skills/lean4/scripts/sorry_analyzer.py . --format=summary --report-only
 ```
 
 ## Cursor
@@ -162,14 +157,12 @@ globs: ["**/*.lean"]
 Then paste the content of `plugins/lean4/skills/lean4/SKILL.md` into the rule body,
 or keep it concise and reference the file path for the agent to read.
 
-Set env vars in your terminal profile (Cursor runs commands in your shell).
-
 ### Verify
 
 Open a `.lean` file, ask the agent to run:
 
 ```bash
-python3 "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
+python3 /path/to/lean4-skills/plugins/lean4/skills/lean4/scripts/sorry_analyzer.py . --format=summary --report-only
 ```
 
 ## Windsurf
@@ -179,7 +172,7 @@ python3 "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
 Windsurf uses its own rules format. Adapt the Cursor pattern above to
 Windsurf's rule system — see [Windsurf docs](https://docs.windsurf.com/windsurf/getting-started)
 for the current config format. The core setup is the same: point the agent at
-SKILL.md and set the three env vars.
+`SKILL.md` and keep the bundled `scripts/` directory intact.
 
 ## OpenCode
 
@@ -202,22 +195,13 @@ cp -r "/path/to/lean4-skills/plugins/lean4/skills/lean4" ~/.config/opencode/skil
 **Without oh-my-opencode:** Point OpenCode at SKILL.md via its instructions
 file or paste relevant sections into your project's configuration.
 
-Set env vars in your shell profile:
-
-```bash
-export LEAN4_PLUGIN_ROOT=/path/to/lean4-skills/plugins/lean4
-export LEAN4_SCRIPTS=$LEAN4_PLUGIN_ROOT/lib/scripts
-export LEAN4_REFS=$LEAN4_PLUGIN_ROOT/skills/lean4/references
-```
-
 OpenCode supports MCP servers — see [OpenCode docs](https://opencode.ai/docs/)
 for current MCP setup commands.
 
 ### Verify
 
 ```bash
-echo "$LEAN4_SCRIPTS"
-python3 "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
+python3 /path/to/lean4-skills/plugins/lean4/skills/lean4/scripts/sorry_analyzer.py . --format=summary --report-only
 ```
 
 ## Any Agent (Generic)
@@ -225,15 +209,14 @@ python3 "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
 Any LLM coding agent that can read markdown and run shell commands can use this pack:
 
 1. Clone the repo
-2. Set the three env vars (see [Environment Bootstrap](#environment-bootstrap-all-hosts) above)
-3. Point your agent at `plugins/lean4/skills/lean4/SKILL.md` as system context
-4. Scripts work standalone — no adapter needed:
+2. Point your agent at `plugins/lean4/skills/lean4/SKILL.md` as system context
+3. Scripts work standalone from the skill root — no adapter needed:
    ```bash
-   python3 "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
-   bash "$LEAN4_SCRIPTS/check_axioms_inline.sh" path/to/YourFile.lean --report-only
-   bash "$LEAN4_SCRIPTS/search_mathlib.sh" "continuous" name
+   python3 plugins/lean4/skills/lean4/scripts/sorry_analyzer.py . --format=summary --report-only
+   bash plugins/lean4/skills/lean4/scripts/check_axioms_inline.sh path/to/YourFile.lean --report-only
+   bash plugins/lean4/skills/lean4/scripts/search_mathlib.sh "continuous" name
    ```
-5. If your agent supports MCP, add lean-lsp-mcp for faster mathlib search and sub-second feedback
+4. If your agent supports MCP, add lean-lsp-mcp for faster mathlib search and sub-second feedback
 
 **Optional — skill auto-discovery:** Some setups may support discovering
 skills at `.agents/skills/<name>/SKILL.md`. This is host-dependent — check
@@ -244,13 +227,9 @@ your agent's docs for supported discovery paths. If supported:
 mkdir -p .agents/skills
 ln -s "/path/to/lean4-skills/plugins/lean4/skills/lean4" .agents/skills/lean4
 
-# Unix/macOS — copy
-mkdir -p .agents/skills
-cp -r "/path/to/lean4-skills/plugins/lean4/skills/lean4" .agents/skills/lean4
-
 # Windows (Git Bash)
 mkdir -p .agents/skills
-cp -r "/path/to/lean4-skills/plugins/lean4/skills/lean4" .agents/skills/lean4
+cp -R "/path/to/lean4-skills/plugins/lean4/skills/lean4" .agents/skills/lean4
 
 # Windows (PowerShell)
 New-Item -ItemType Directory -Force -Path .agents\skills
@@ -260,9 +239,9 @@ Copy-Item -Recurse "path\to\lean4-skills\plugins\lean4\skills\lean4" .agents\ski
 ### Verify
 
 ```bash
-echo "$LEAN4_SCRIPTS"
-ls "$LEAN4_SCRIPTS/sorry_analyzer.py"
-python3 "$LEAN4_SCRIPTS/sorry_analyzer.py" . --format=summary --report-only
+readlink .agents/skills/lean4
+ls .agents/skills/lean4/scripts/sorry_analyzer.py
+python3 .agents/skills/lean4/scripts/sorry_analyzer.py . --format=summary --report-only
 ```
 
 ## Lean LSP MCP Server (All Hosts)
@@ -330,7 +309,7 @@ If you have the old 3-plugin system:
 |----|-----|
 | 3 plugins | 1 unified plugin |
 | `/lean4-theorem-proving:*` | `/lean4:*` |
-| `.claude/tools/lean4/` scripts | `$LEAN4_SCRIPTS/` (internal) |
+| `.claude/tools/lean4/` scripts | `skills/lean4/scripts/` |
 | Memory integration | Removed (didn't work) |
 
 ### Legacy Access

@@ -69,12 +69,12 @@ Clone (shallow) and follow the setup for your host:
 git clone --depth 1 https://github.com/cameronfreer/lean4-skills.git
 ```
 
-- **Codex CLI** — add to `AGENTS.md` + env vars. See [INSTALLATION.md → Codex](INSTALLATION.md#openai-codex-cli)
-- **Gemini CLI** — add to `GEMINI.md` + env vars. See [INSTALLATION.md → Gemini](INSTALLATION.md#gemini-cli)
-- **Cursor** — project rules → SKILL.md + env vars. See [INSTALLATION.md → Cursor](INSTALLATION.md#cursor)
-- **Windsurf** — project rules → SKILL.md + env vars. See [INSTALLATION.md → Windsurf](INSTALLATION.md#windsurf)
-- **OpenCode** — copy to `.opencode/skills/` + env vars. See [INSTALLATION.md → OpenCode](INSTALLATION.md#opencode)
-- **Other agents** — point agent at SKILL.md + env vars. See [INSTALLATION.md → Generic](INSTALLATION.md#any-agent-generic)
+- **Codex CLI** — repo-local `.agents/skills/lean4` symlink plus optional `.codex/config.toml`. See [INSTALLATION.md → Codex](INSTALLATION.md#openai-codex-cli)
+- **Gemini CLI** — point `GEMINI.md` at `SKILL.md`; scripts live under the skill root. See [INSTALLATION.md → Gemini](INSTALLATION.md#gemini-cli)
+- **Cursor** — project rules → `SKILL.md`; run scripts from the skill's `scripts/` dir. See [INSTALLATION.md → Cursor](INSTALLATION.md#cursor)
+- **Windsurf** — project rules → `SKILL.md`; run scripts from the skill's `scripts/` dir. See [INSTALLATION.md → Windsurf](INSTALLATION.md#windsurf)
+- **OpenCode** — copy or symlink the skill directory; scripts come along with it. See [INSTALLATION.md → OpenCode](INSTALLATION.md#opencode)
+- **Other agents** — point the agent at `SKILL.md` and preserve the bundled `scripts/` + `references/` layout. See [INSTALLATION.md → Generic](INSTALLATION.md#any-agent-generic)
 
 ## Lean LSP MCP Server (Optional, Highly Recommended)
 
